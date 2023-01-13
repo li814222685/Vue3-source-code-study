@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width= , initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h3>
+      1.框架的 命令式和声明式 命令式：面向过程，比如 使用
+      创建一个元素，绑定一个点击事件，当点击时弹出一个message
+      这就是纯纯的命令式，代码面向过程更符合人类的编程直觉。
+      <script>
+        const element = document.getElementsByName("abc");
+        elment.textContent = "Good Night";
+        element.onClick = alert("HALO");
+      </script>
+      声明式：面向结果，比如我们使用Vue来阐释
+      <div class="abc" @onclick="alet('声明式')">Good Night</div>
+      上面的代码里，Vue帮我们封装了过程，只呈现了结果。所以VueJs的内部实现一定是命令式的，
+      只不过暴露给用户的是 声明式。 声明式VS 命令式性能：
+      声明式的代码性能不优于命令式。因为声明式的代码是对命令式的二次封装，而命令式是直接的js代码执行
+      比如我们想修改一个dom的文本节点，通常命令式只需要一行
+      <script>
+        element.textContent = "cheer Up";
+      </script>
+      而Vue会是
+      <div class="text" @click="xxx">cheer Up</div>
+      Vue一定会解析Template，做很多额外的操作，因为它是面向结果。
+      这里我们先抛出一个公式来表明，命令式和声明式在上面的案例中，修改文本内容所造成的性能消耗
+      A = 更新文本消耗 B = 找出差异文本消耗 命令式更新文本消耗 = A
+      声明式更新文本消耗 = A + B
+      说到这里，既然命令式在性能上是更好的选择，为什么Vue还要使用声明式的设计。
+      1.声明式的可维护性更强，好用，对开发者的心智负担更小。
+      2.虽然多出了找出Dom更新差异的消耗，相比命令式多出了一些性能的损失，但是框架设计者要做的就是：在保持可维护性的同时，让性能损失最小化。
+      虚拟DOM VS DOM的性能： 什么是虚拟DOM？ 虚拟DOM就是
+      用AST抽象语法树，将DOM解析成
+      对象的形式，这个的对象拥有一些属性，用来描述这个Dom的 特点。 比如这个DOM：
+      <div class="container">
+        <p>你好</p>
+        <span>再见</span>
+      </div>
+      解析为：
+      <script>
+        const V_DOM = {
+          tagName: "div",
+          class: "container",
+          children: [
+            {
+              tagName: "p",
+              class: "",
+              children: "你好",
+            },
+            {
+              tagName: "div",
+              class: "",
+              children: "再见",
+            },
+          ],
+        };
+      </script>
+      通过递归遍历这个对象，来创建真实的DOM。
+      document.write、innerHTML、document.createElement 原理以及性能
+      document.writer 调用时 会重绘整个页面 innerHTML 如果只创建一个元素
+      和createElement没有太大区别。
+      如果是循环一万次，以字符串的形式来频繁更新innerHTML的字符串的话，它的性能很差。
+      如果是把字符串push到一个数组里，用join方法拼接成字符串后，一次性赋值给innerHTML
+      它的性能比createElment高。 运行时、编译时、运行+编译
+      运行时：直接将dom数据渲染为DOM
+      <script>
+        const obj = {
+          tagName: "div",
+          class: "container",
+          children: [
+            {
+              tagName: "p",
+              class: "",
+              children: "你好",
+            },
+            {
+              tagName: "div",
+              class: "",
+              children: "再见",
+            },
+          ],
+        };
+        const root = document.getElementsByTagName("body");
+
+        const render = (obj, root) => {
+          const el = document.createElement(obj.tagName);
+          if (typeof obj.children === "string") {
+            const text = document.createTextNode(obj.children);
+            el.appendChild(text);
+          } else if (obj.children) {
+            obj.children.forEach((child) => render(child, el));
+          }
+          root.appendChild(el);
+        };
+      </script>
+      运行+编译： 这种虚拟DOM难以书写，或者写起来比较麻烦，结构也不是很明朗。
+      如果能以类似HTML
+      的结构来展示dom，再对这种模版进行编译，编译后的产物就是虚拟DOM。
+      其实说了这么多就是，Vue Template 到 虚拟DOM 的过程。 代码可以这么表示
+      <div>
+        <p>你好</p>
+        <span>再见</span>
+      </div>
+      <script>
+        // <div>
+        //   <p>你好</p>
+        //   <span>再见</span>
+        // </div>;
+        //      ||
+        //      解析
+        // 模版解析器
+        const html = `
+            <div>
+          <p>你好</p>
+          <span>再见</span>
+        </div>
+            `;
+        const compiler = () => {
+          // return  虚拟DOM对象
+        };
+        //先将HTML字符串编译为虚拟DOM，然后根据虚拟DOM渲染
+        render(compiler(html));
+      </script>
+
+      纯编译时框架：
+      实际上就是直接在compiler解析器这一层把html字符串直接解析为js代码。svelte
+      就是纯编译的框架。
+    </h3>
+  </body>
+</html>
