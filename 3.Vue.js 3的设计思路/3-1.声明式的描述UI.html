@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    Vue3所谓的声明式框架就是通过类似HTML结构的模版语言，或者用一种结构来描述真实DOM的方法（即虚拟DOM）。
+    Template的方式更加直观，虚拟DOM的方式更加灵活。 Template最后会被 编译器
+    编译为 虚拟DOM，然后进入renderer 渲染器， 虚拟DOM直接进入 渲染器。比如使用 h
+    函数，h函数就是返回了一个虚拟Node的对象。这个对象描述了该节点的tag、props、事件绑定等。
+    <br />
+    <div id="target">23</div>
+  </body>
+  <script src="./vue.js">
+    23
+  </script>
+  <script>
+    const vNode = Vue.h("p", "使用了h函数创建的节点");
+    console.log(vNode);
+  </script>
+</html>

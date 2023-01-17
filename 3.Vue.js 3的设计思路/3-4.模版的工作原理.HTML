@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    模版的工作原理： 实际上Vue3 的Template 就是通过解析器(AST语法树)，将模版
+    解析Template为虚拟DOM，最终虚拟DOM进入渲染器。
+    <template>.....</template> 解析====> 虚拟DOM ====> 渲染器 renderer ====>
+    真实DOM 至于使用的什么解析器哪个babel 目前还没说，其实jsx
+    跟temolate原理大同小异，都是模版解析这一套。
+    那当模版更新时，Vue是怎么做到动态的更新呢？Vue 如何知道是哪个节点更新了呢？
+    Q：Vue 的动态绑定
+    v-bind，会在属性前加一个冒号：，以此来区分该属性内的变量是动态的，当它发现某个属性是动态绑定时:class：
+    会在解析成虚拟DOM这一步，去在虚拟node的属性上加一个patchFlag属性，以此来作为标记。
+  </body>
+</html>

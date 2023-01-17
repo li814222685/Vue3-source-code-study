@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body id="root">
+    组件的定义：组件就是对一组DOM的封装。
+  </body>
+  <script>
+    const MyComponent = () => ({
+      tag: "div",
+      children: "我的组件",
+    });
+
+    const vnode = {
+      tag: MyComponent,
+    };
+
+    const mountElement = (vnode, container) => {
+      const el = document.createElement(vnode.tag);
+      for (const key in vnode.props) {
+        if (/^on/.test(key)) {
+          el.addEventListener(key.substr(2).toLowerCase(), vnode.props[key]);
+        }
+        if (typeof vnode.children === "string") {
+          el.appendChild(document.createTextNode(vnode.children));
+        } else if (Array.isArray(vnode.children)) {
+          vnode.children.forEach((child) => {
+            renderer(child, el);
+          });
+        } else if (typeof v) {
+        }
+        container.appendChild(el);
+      }
+    };
+
+    const mountComponent = (vnode, container) => {
+      const getNode = vnode.tag();
+      renderer(getNode, container);
+    };
+
+    //通过虚拟DOM 的tag 来抽象两种逻辑，一种是Tag为字符串 和 Tag为函数(组件)
+    const renderer = (vnode, container) => {
+      if (typeof vnode.tag === "string") {
+        mountElement(vnode, container);
+      } else if (typeof vnode.tag === "function") {
+        mountComponent(vnode, container);
+      }
+    };
+
+    const root = document.getElementById("root");
+
+    renderer(vnode, root);
+  </script>
+</html>
