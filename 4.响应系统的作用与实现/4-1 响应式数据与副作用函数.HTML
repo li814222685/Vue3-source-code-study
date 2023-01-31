@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    什么是响应式数据？什么是副作用函数？
+    响应式数据：当该变量的值改变时，它对应的副作用函数都自动更新一遍，保证值是动态获取的最新值。
+    副作用函数：当某个变量的值被修改时，如果这个变量已经被其他函数
+    引用了，那么我们就称之为这是带有副作用的。意味对其他函数有所影响。
+
+    <p><span id="effect"></span></p>
+  </body>
+  <script>
+    const data = { target: "hello world" };
+    function effect() {
+      document.getElementById("effect").innerText = data.target;
+    }
+    effect();
+    //我们的目标就是当修改data.target以后，页面上的内容也可以动态的更新。
+    data.target = "响应式数据";
+  </script>
+</html>

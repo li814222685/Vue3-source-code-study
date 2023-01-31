@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    设计一个完善的响应式系统
+
+    <p><span id="effect"></span></p>
+  </body>
+  <script>
+    //目标1：动态添加effect函数
+    //目标2：将 target、key、effect函数 三者绑定起来（Tree Struct)
+    const data = { target: "hello world" };
+    let activeEffect;
+
+    //存储effect函数 执行栈
+    // const bucket = new Set();
+    const bucket = new WeakMap();
+    //对原始对象 进行get和set拦截
+    const obj = new Proxy(data, {
+      get(target, key) {
+        if (!activeEffect) return target[key];
+        let targetDeps = bucket.get(target);
+        !targetDeps && bucket.set(target, (targetDeps = new Map()));
+        let keyDeps = targetDeps.get(key);
+        !keyDeps && targetDeps.set(key, (keyDeps = new Set()));
+        keyDeps.add(activeEffect);
+        return target[key];
+      },
+      set(target, key, newVal) {
+        target[key] = newVal;
+        const keyMaps = bucket.get(target);
+        if (!keyMaps) return;
+        const effects = keyMaps.get(key);
+        if (!effects) return;
+        effects.forEach((fn) => fn());
+        return true;
+      },
+    });
+    //副作用函数注册器
+    const effectRegister = (fn) => {
+      activeEffect = fn;
+      fn();
+    };
+    //用注册器 来执行 effect
+    effectRegister(() => {
+      document.getElementById("effect").innerText = obj.target;
+    });
+    setTimeout(() => {
+      obj.target = "响应式数据";
+    }, 2000);
+
+    setTimeout(() => {
+      obj.another = "新加的key";
+    }, 3000);
+  </script>
+</html>
