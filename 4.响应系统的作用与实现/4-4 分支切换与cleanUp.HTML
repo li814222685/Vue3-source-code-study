@@ -7,14 +7,15 @@
     <title>Document</title>
   </head>
   <body>
-    设计一个完善的响应式系统
+    分支切换 与 cleanUp： 当副作用函数内出现条件分支时，这会导致冗余的
+    副作用函数依赖！
 
     <p><span id="effect"></span></p>
   </body>
   <script>
     //目标1：动态添加effect函数
     //目标2：将 target、key、effect函数 三者绑定起来（Tree Struct)
-    const data = { target: "hello world" };
+    const data = { ok: true, text: "hello world" };
     let activeEffect;
 
     //存储effect函数 执行栈
@@ -27,6 +28,7 @@
       let keyDeps = targetDeps.get(key);
       !keyDeps && targetDeps.set(key, (keyDeps = new Set()));
       keyDeps.add(activeEffect);
+      activeEffect.deps.push(keyDeps);
     };
 
     const trigger = (target, key) => {
@@ -34,7 +36,8 @@
       if (!keyMaps) return;
       const effects = keyMaps.get(key);
       if (!effects) return;
-      effects.forEach((fn) => fn());
+      const effectsRun = new Set(effects);
+      effectsRun && effectsRun.forEach((fn) => fn());
     };
 
     //对原始对象 进行get和set拦截
@@ -50,21 +53,36 @@
         return true;
       },
     });
+
+    const cleanUp = (effectFn) => {
+      for (let i = 0; i < effectFn.deps.length; i++) {
+        const dep = effectFn.deps[i];
+        dep.delete(effectFn);
+      }
+      effectFn.deps.length = 0;
+    };
     //副作用函数注册器
     const effectRegister = (fn) => {
-      activeEffect = fn;
-      fn();
+      const effectFn = () => {
+        cleanUp(effectFn);
+        activeEffect = effectFn;
+        fn();
+      };
+      effectFn.deps = [];
+      effectFn();
     };
     //用注册器 来执行 effect
     effectRegister(() => {
-      document.getElementById("effect").innerText = obj.target;
+      //新增：
+      //当obj.text 为初始值 true时，建立的副作用依赖关系参考图片4-4-1 冗余副作用函数
+      console.log("副作用执行");
+      document.getElementById("effect").innerText = obj.ok ? obj.text : "not";
     });
     setTimeout(() => {
-      obj.target = "响应式数据";
-    }, 2000);
+      obj.ok = false;
 
-    setTimeout(() => {
-      obj.another = "新加的key";
-    }, 3000);
+      obj.text = "good game";
+      console.log(bucket);
+    }, 2000);
   </script>
 </html>
