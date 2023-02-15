@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    期望1： 副作用函数是可以调度的，也就是能决定副作用函数的执行时机。
+    目前js代码的打印顺序，是： 0 1 end 期望变成 0 end 1 实现原理：
+    1.给effect注册器，添加第二个参数options，options有一个方法scheduler调度器，调度器接受一个参数，是当前执行的副作用函数。
+    在调度器内执行一个setTimeout，将入参effectFn在setTimeout执行，实际上该fn就进入了宏任务。
+    2.在effect注册器的包装层，加一个属性options
+    3.当trigger内的副作用函数执行时，做一个判断：当这个副作用函数存在调度器时，将其放入调度器执行；否则直接执行这个副作用函数。
+    期望2： 通过调度器来控制，副作用函数的执行次数。
+    目前在两次递增后(obj.num++)，控制台输出： 0,1,2
+    这里的1实际上只是过渡状态，so 期望结果是： 0,3
+
+    <p><span id="effect"></span></p>
+  </body>
+  <!-- 期望1的 实现代码 -->
+  <!-- <script>
+    const data = { ok: true, text: "hello world", num: 0 };
+    let activeEffect;
+    const effectStack = [];
+
+    //存储effect函数 执行栈
+    // const bucket = new Set();
+    const bucket = new WeakMap();
+
+    const track = (target, key) => {
+      let targetDeps = bucket.get(target);
+      !targetDeps && bucket.set(target, (targetDeps = new Map()));
+      let keyDeps = targetDeps.get(key);
+      !keyDeps && targetDeps.set(key, (keyDeps = new Set()));
+      keyDeps.add(activeEffect);
+      activeEffect.deps.push(keyDeps);
+    };
+
+    const trigger = (target, key) => {
+      const keyMaps = bucket.get(target);
+      if (!keyMaps) return;
+      const effects = keyMaps.get(key);
+      if (!effects) return;
+      const effectsRun = new Set();
+      effects.forEach((effectFn) => {
+        if (effectFn != activeEffect) {
+          effectsRun.add(effectFn);
+        }
+      });
+      effectsRun &&
+        effectsRun.forEach((fn) => {
+          //如果当前传入的配置中有scheduler,则用scheduler调用函数
+          //否则正常执行
+          if (fn?.options?.scheduler) {   //新增
+            fn?.options?.scheduler(fn);
+          } else {
+            fn();
+          }
+        });
+    };
+
+    //对原始对象 进行get和set拦截
+    const obj = new Proxy(data, {
+      get(target, key) {
+        if (!activeEffect) return target[key];
+        track(target, key);
+        return target[key];
+      },
+      set(target, key, newVal) {
+        target[key] = newVal;
+        trigger(target, key);
+        return true;
+      },
+    });
+
+    const cleanUp = (effectFn) => {
+      for (let i = 0; i < effectFn.deps.length; i++) {
+        const dep = effectFn.deps[i];
+        dep.delete(effectFn);
+      }
+      effectFn.deps.length = 0;
+    };
+    //副作用函数注册器
+    const effectRegister = (fn, options = {}) => {  //新增
+      const effectFn = () => {
+        cleanUp(effectFn);
+        activeEffect = effectFn;
+        effectStack.push(effectFn);
+        fn();
+        effectStack.pop();
+        activeEffect = effectStack[effectStack.length - 1];
+      };
+      effectFn.deps = [];
+      effectFn.options = options;  //新增
+      effectFn();
+    };
+
+    effectRegister(
+      () => {
+        console.log(obj.num);
+      },
+      //options
+      {
+        //调度器
+        scheduler(fn) {            //新增
+          setTimeout(() => {
+            fn();
+          }, 1);
+        },
+      }
+    );
+    obj.num++;
+    console.log("end");
+  </script> -->
+  <!-- 期望2的实现代码 -->
+  <!-- <script>
+    const data = { ok: true, text: "hello world", num: 0 };
+    let activeEffect;
+    const effectStack = [];
+    //任务队列
+    const jobQue = new Set();
+    let isFlushing = false;
+    const p = Promise.resolve();
+
+    const flushJob = () => {
+      if (isFlushing) return;
+      isFlushing = true;
+      p.then(() => {
+        console.log("调度执行");
+        jobQue.forEach((fn) => fn());
+      }).finally(() => {
+        isFlushing = false;
+      });
+    };
+
+    //存储effect函数 执行栈
+    // const bucket = new Set();
+    const bucket = new WeakMap();
+
+    const track = (target, key) => {
+      let targetDeps = bucket.get(target);
+      !targetDeps && bucket.set(target, (targetDeps = new Map()));
+      let keyDeps = targetDeps.get(key);
+      !keyDeps && targetDeps.set(key, (keyDeps = new Set()));
+      keyDeps.add(activeEffect);
+      activeEffect.deps.push(keyDeps);
+    };
+
+    const trigger = (target, key) => {
+      const keyMaps = bucket.get(target);
+      if (!keyMaps) return;
+      const effects = keyMaps.get(key);
+      if (!effects) return;
+      const effectsRun = new Set();
+      effects.forEach((effectFn) => {
+        if (effectFn != activeEffect) {
+          effectsRun.add(effectFn);
+        }
+      });
+      effectsRun &&
+        effectsRun.forEach((fn) => {
+          //如果当前传入的配置中有scheduler,则用scheduler调用函数
+          //否则正常执行
+          if (fn?.options?.scheduler) {
+            //新增
+            console.log("传入调度");
+            fn?.options?.scheduler(fn);
+          } else {
+            fn();
+          }
+        });
+    };
+
+    //对原始对象 进行get和set拦截
+    const obj = new Proxy(data, {
+      get(target, key) {
+        if (!activeEffect) return target[key];
+        track(target, key);
+        return target[key];
+      },
+      set(target, key, newVal) {
+        target[key] = newVal;
+        trigger(target, key);
+        return true;
+      },
+    });
+
+    const cleanUp = (effectFn) => {
+      for (let i = 0; i < effectFn.deps.length; i++) {
+        const dep = effectFn.deps[i];
+        dep.delete(effectFn);
+      }
+      effectFn.deps.length = 0;
+    };
+    //副作用函数注册器
+    const effectRegister = (fn, options = {}) => {
+      //新增
+      const effectFn = () => {
+        cleanUp(effectFn);
+        activeEffect = effectFn;
+        effectStack.push(effectFn);
+        fn();
+        effectStack.pop();
+        activeEffect = effectStack[effectStack.length - 1];
+      };
+      effectFn.deps = [];
+      effectFn.options = options; //新增
+      effectFn();
+    };
+
+    effectRegister(
+      () => {
+        console.log(obj.num);
+      },
+      {
+        scheduler(fn) {
+          jobQue.add(fn);
+          flushJob();
+        },
+      }
+    );
+    obj.num++;
+    obj.num++;
+  </script> -->
+  <script>
+    console.log("1");
+
+    new Promise((resolve, reject) => {
+      resolve("2");
+    }).then((res) => {
+      console.log(res);
+    });
+
+    setTimeout(() => {
+      console.log("3");
+    });
+
+    new Promise((resolve, reject) => {
+      resolve("4");
+    }).then((res) => {
+      console.log(res);
+    });
+
+    console.log("5");
+  </script>
+</html>

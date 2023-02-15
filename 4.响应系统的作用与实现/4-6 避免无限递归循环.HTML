@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    当在一个副作用函数内，我们去执行自增并赋值，会出现栈溢出。 effect(() =>
+    obj.num++)
+    <p><span id="effect"></span></p>
+  </body>
+
+  <script>
+    //目标1：动态添加effect函数
+    //目标2：将 target、key、effect函数 三者绑定起来（Tree Struct)
+    const data = { ok: true, text: "hello world", num: 0 };
+    let activeEffect;
+    const effectStack = [];
+
+    //存储effect函数 执行栈
+    // const bucket = new Set();
+    const bucket = new WeakMap();
+
+    const track = (target, key) => {
+      let targetDeps = bucket.get(target);
+      !targetDeps && bucket.set(target, (targetDeps = new Map()));
+      let keyDeps = targetDeps.get(key);
+      !keyDeps && targetDeps.set(key, (keyDeps = new Set()));
+      keyDeps.add(activeEffect);
+      activeEffect.deps.push(keyDeps);
+    };
+
+    const trigger = (target, key) => {
+      const keyMaps = bucket.get(target);
+      if (!keyMaps) return;
+      const effects = keyMaps.get(key);
+      if (!effects) return;
+      const effectsRun = new Set();
+      effects.forEach((effectFn) => {
+        //新增
+        if (effectFn != activeEffect) {
+          effectsRun.add(effectFn);
+        }
+      });
+      effectsRun && effectsRun.forEach((fn) => fn());
+    };
+
+    //对原始对象 进行get和set拦截
+    const obj = new Proxy(data, {
+      get(target, key) {
+        if (!activeEffect) return target[key];
+        track(target, key);
+        return target[key];
+      },
+      set(target, key, newVal) {
+        target[key] = newVal;
+        trigger(target, key);
+        return true;
+      },
+    });
+
+    const cleanUp = (effectFn) => {
+      for (let i = 0; i < effectFn.deps.length; i++) {
+        const dep = effectFn.deps[i];
+        dep.delete(effectFn);
+      }
+      effectFn.deps.length = 0;
+    };
+    //副作用函数注册器
+    const effectRegister = (fn) => {
+      const effectFn = () => {
+        cleanUp(effectFn);
+        activeEffect = effectFn;
+        effectStack.push(effectFn);
+        fn();
+        effectStack.pop();
+        activeEffect = effectStack[effectStack.length - 1];
+      };
+      effectFn.deps = [];
+      effectFn();
+    };
+    effectRegister(() => obj.num++);
+  </script>
+</html>
