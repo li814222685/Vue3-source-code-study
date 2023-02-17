@@ -13,7 +13,8 @@
     在调度器内执行一个setTimeout，将入参effectFn在setTimeout执行，实际上该fn就进入了宏任务。
     2.在effect注册器的包装层，加一个属性options
     3.当trigger内的副作用函数执行时，做一个判断：当这个副作用函数存在调度器时，将其放入调度器执行；否则直接执行这个副作用函数。
-    期望2： 通过调度器来控制，副作用函数的执行次数。
+    期望2： Vue 连续多次修改一个数据，只会触发一次更新的原理：
+    通过调度器来控制，副作用函数的执行次数。
     目前在两次递增后(obj.num++)，控制台输出： 0,1,2
     这里的1实际上只是过渡状态，so 期望结果是： 0,3
 
@@ -115,7 +116,7 @@
     console.log("end");
   </script> -->
   <!-- 期望2的实现代码 -->
-  <!-- <script>
+  <script>
     const data = { ok: true, text: "hello world", num: 0 };
     let activeEffect;
     const effectStack = [];
@@ -223,26 +224,5 @@
     );
     obj.num++;
     obj.num++;
-  </script> -->
-  <script>
-    console.log("1");
-
-    new Promise((resolve, reject) => {
-      resolve("2");
-    }).then((res) => {
-      console.log(res);
-    });
-
-    setTimeout(() => {
-      console.log("3");
-    });
-
-    new Promise((resolve, reject) => {
-      resolve("4");
-    }).then((res) => {
-      console.log(res);
-    });
-
-    console.log("5");
   </script>
 </html>
